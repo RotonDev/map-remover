@@ -3,7 +3,44 @@ Configs: {
 		DisplayName: Map Config
 
 		DontRenderTerrain: {
-			Label: Dont Render Terrain
+			Label: Don't Render Terrain
+			Tooltip: "[c/FF0000:Warning!] This option resets your map discovery progress!"
+		}
+
+		Headers.MapRenderingOptions: Map Rendering Options Header
+
+		RenderPotionOfReturnHome: {
+			Label: Render Potion Of Return Home
+			Tooltip: ""
+		}
+
+		RenderPotionOfReturnLastPos: {
+			Label: Render Potion Of Return Last Pos
+			Tooltip: ""
+		}
+
+		RenderLastGolfBallHit: {
+			Label: Render Last Golf Ball Hit
+			Tooltip: ""
+		}
+
+		RenderNpcHeads: {
+			Label: Render Npc Heads
+			Tooltip: ""
+		}
+
+		RenderBossHeads: {
+			Label: Render Boss Heads
+			Tooltip: ""
+		}
+
+		RenderPlayerHeads: {
+			Label: Render Player Heads
+			Tooltip: ""
+		}
+
+		RenderDeathMarkers: {
+			Label: Render Death Markers
 			Tooltip: ""
 		}
 	}
