@@ -30,4 +30,12 @@ public class MapConfig : ModConfig
     public bool RenderPlayerHeads;
     [DefaultValue(true)]
     public bool RenderDeathMarkers;
+    [DefaultValue(true)]
+    public bool RenderDroppedCoins;
+    [DefaultValue(true)]
+    public bool RenderPings;
+    [DefaultValue(true)]
+    public bool RenderWorldSpawnIcon;
+    [DefaultValue(true)]
+    public bool RenderSpawnpointIcon;
 }
