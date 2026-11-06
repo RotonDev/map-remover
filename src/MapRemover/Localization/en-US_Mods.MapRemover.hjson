@@ -10,37 +10,62 @@ Configs: {
 		Headers.MapRenderingOptions: Map Rendering Options Header
 
 		RenderPotionOfReturnHome: {
-			Label: Render Potion Of Return Home
+			Label: Potion of Return Home Position
 			Tooltip: ""
 		}
 
 		RenderPotionOfReturnLastPos: {
-			Label: Render Potion Of Return Last Pos
+			Label: Potion of Return Last Position
 			Tooltip: ""
 		}
 
 		RenderLastGolfBallHit: {
-			Label: Render Last Golf Ball Hit
+			Label: Last Golf Ball Position
 			Tooltip: ""
 		}
 
 		RenderNpcHeads: {
-			Label: Render Npc Heads
+			Label: Town NPC Heads
 			Tooltip: ""
 		}
 
 		RenderBossHeads: {
-			Label: Render Boss Heads
+			Label: Boss Heads
 			Tooltip: ""
 		}
 
 		RenderPlayerHeads: {
-			Label: Render Player Heads
+			Label: Player Heads
 			Tooltip: ""
 		}
 
 		RenderDeathMarkers: {
-			Label: Render Death Markers
+			Label: Death Markers
+			Tooltip: ""
+		}
+
+		RenderDroppedCoins: {
+			Label: Dropped Coins
+			Tooltip: ""
+		}
+
+		RenderPings: {
+			Label: Pings
+			Tooltip: ""
+		}
+
+		RenderWorldSpawnIcon: {
+			Label: World Spawn Icon
+			Tooltip: ""
+		}
+
+		RenderSpawnpointIcon: {
+			Label: Personal Spawnpoint Icon
+			Tooltip: ""
+		}
+
+		RenderPylons: {
+			Label: Pylons
 			Tooltip: ""
 		}
 	}
