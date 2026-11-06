@@ -1,1 +1,14 @@
-This description will show up on the steam page, check out https://steamcommunity.com/comment/Guide/formattinghelp.
+[h1]FEATURES:[/h1][list]
+[*] [h2] The following can currently be disabled: [/h2]
+[*] Map terrain rendering
+[*] Pylons
+[*] Boss heads
+[*] Town NPC & Pet heads
+[*] Spawnpoint icons
+[*] Player heads
+[*] Death markers
+[*] Potion of Return map icons
+[*] Hit golf balls
+[*] Map pings
+[*] Dropped coins
+[/list]
