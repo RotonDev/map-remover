@@ -1,10 +1,17 @@
-﻿using MonoMod.Cil;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using MonoMod.Cil;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using System.Text;
 using Terraria;
+using Terraria.DataStructures;
+using Terraria.GameContent;
 using Terraria.Graphics.Renderers;
+using Terraria.Localization;
+using Terraria.Map;
 using Terraria.ModLoader;
 using Terraria.ModLoader.Config;
 
@@ -12,16 +19,8 @@ namespace MapRemover.Common;
 
 public class MapClearing : ModSystem
 {
-    // npc name renderign
-    // player name rendering
     // spawn icon
-    // pylon
     // bed icon
-    // player heads
-    // pings
-    // revenge
-    // death marker text
-    // death marker minimap
     public override void Load()
     {
         MethodInfo mDrawToMap = typeof(Main).GetMethod("DrawToMap", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -32,6 +31,13 @@ public class MapClearing : ModSystem
         MethodInfo mDrawNpcHeadBoss = typeof(Main).GetMethod("DrawNPCHeadBoss", BindingFlags.NonPublic | BindingFlags.Static);
         MethodInfo mDrawPlayerHead = typeof(MapHeadRenderer).GetMethod("DrawPlayerHead", BindingFlags.Instance | BindingFlags.Public);
         MethodInfo mDrawPlayerDeathMarker = typeof(Main).GetMethod("DrawPlayerDeathMarker", BindingFlags.Static | BindingFlags.NonPublic);
+        MethodInfo mDrawMap = typeof(Main).GetMethod("DrawMap", BindingFlags.Instance | BindingFlags.NonPublic);
+        MethodInfo mUseMouseOver = typeof(CoinLossRevengeSystem.RevengeMarker).GetMethod("UseMouseOver", BindingFlags.Public | BindingFlags.Instance);
+        MethodInfo mDrawMapIcon = typeof(CoinLossRevengeSystem.RevengeMarker).GetMethod("DrawMapIcon", BindingFlags.Public | BindingFlags.Instance);
+        MethodInfo mDrawPings = typeof(PingMapLayer).GetMethod("Draw", BindingFlags.Instance | BindingFlags.Public);
+        MethodInfo mDrawSpawns = typeof(SpawnMapLayer).GetMethod("Draw", BindingFlags.Instance | BindingFlags.Public);
+        MethodInfo mDrawPylons = typeof(TeleportPylonsMapLayer).GetMethod("Draw", BindingFlags.Instance | BindingFlags.Public);
+        MonoModHooks.Modify(mDrawSpawns, StopSpawnpointRendering);
         MonoModHooks.Modify(mDrawPlayerHead, StopPlayerHeadRendering);
         MonoModHooks.Modify(mDrawToMap, StopMapRendering);
         MonoModHooks.Modify(mDrawMapIcons_PotionOfReturn1, StopPotionOfReturnHomeDrawing);
@@ -40,6 +46,145 @@ public class MapClearing : ModSystem
         MonoModHooks.Modify(mDrawNpcHeadFriendly, StopTownNpcHeadDrawing);
         MonoModHooks.Modify(mDrawNpcHeadBoss, StopBossHeadDrawing);
         MonoModHooks.Modify(mDrawPlayerDeathMarker, StopDeathMarkerDrawing);
+        MonoModHooks.Modify(mDrawMap, StopHoverTexts);
+        MonoModHooks.Modify(mUseMouseOver, StopDroppedMoneyRendering);
+        MonoModHooks.Modify(mDrawMapIcon, StopMoneyIconRendering);
+        MonoModHooks.Modify(mDrawPings, StopPingRendering);
+        MonoModHooks.Modify(mDrawPylons, StopPylonRendering);
+    }
+    private static void StopPylonRendering(ILContext il)
+    {
+        ILCursor c = new ILCursor(il);
+        ILLabel skip = EmitSkipForBoolConfigOption(il, c, "RenderPylons", true);
+        c.EmitRet();
+        c.MarkLabel(skip);
+    }
+    private static void StopSpawnpointRendering(ILContext il)
+    {
+        Type configType = typeof(MapConfig);
+        MethodInfo configGetInstance = configType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static).GetGetMethod();
+        FieldInfo worldSpawn = configType.GetField("RenderWorldSpawnIcon", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+        FieldInfo playerSpawn = configType.GetField("RenderSpawnpointIcon", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+
+        ILCursor c = new ILCursor(il);
+        ILLabel retLabel = c.DefineLabel();
+        ILLabel skipFirstCheckLabel = c.DefineLabel();
+
+        c.GotoNext(MoveType.After, i => i.MatchCall<Vector2>(".ctor"));
+        c.EmitCall(configGetInstance);
+        c.EmitLdfld(worldSpawn);
+        c.EmitBrfalse(skipFirstCheckLabel);
+
+        c.GotoNext(MoveType.After, i => i.MatchStindRef());
+        c.MarkLabel(skipFirstCheckLabel);
+        c.EmitCall(configGetInstance);
+        c.EmitLdfld(playerSpawn);
+        c.EmitBrfalse(retLabel);
+
+        c.GotoNext(i => i.MatchRet());
+        c.MarkLabel(retLabel);
+        // move into condition :)
+    }
+    private static void StopPingRendering(ILContext il)
+    {
+        ILCursor c = new ILCursor(il);
+        ILLabel skip = EmitSkipForBoolConfigOption(il, c, "RenderPings", true);
+        c.EmitRet();
+        c.MarkLabel(skip);
+    }
+    private static void StopMoneyIconRendering(ILContext il)
+    {
+        ILCursor c = new ILCursor(il);
+        ILLabel skip = EmitSkipForBoolConfigOption(il, c, "RenderDroppedCoins", true);
+        c.EmitLdcI4(0);
+        c.EmitRet();
+        c.MarkLabel(skip);
+    }
+    private static void StopDroppedMoneyRendering(ILContext il)
+    {
+        ILCursor c = new ILCursor(il);
+        ILLabel skip = EmitSkipForBoolConfigOption(il, c, "RenderDroppedCoins", true);
+        c.EmitRet();
+        c.MarkLabel(skip);
+    }
+    private static void StopHoverTexts(ILContext il)
+    {
+        ILCursor c = new ILCursor(il);
+        int textIndex = -1;
+        c.GotoNext(i => i.MatchStloc(out textIndex));
+
+        // do this twice for full map/minimap (genius!)
+        for (int i = 0; i < 2; i++)
+        {
+            // npc names
+            c.GotoNext(MoveType.After, i => i.MatchCallvirt<NPC>("get_FullName"), i => i.MatchStloc(textIndex));
+            EmitStringSwapForCondition(il, c, "RenderNpcHeads", textIndex);
+            // boss names
+            c.GotoNext(MoveType.After, i => i.MatchCallvirt<NPC>("get_GivenOrTypeName"), i => i.MatchStloc(textIndex));
+            EmitStringSwapForCondition(il, c, "RenderBossHeads", textIndex);
+            // player names
+            c.GotoNext(MoveType.After, i => i.MatchLdfld<Player>("name"), i => i.MatchStloc(textIndex));
+            EmitStringSwapForCondition(il, c, "RenderPlayerHeads", textIndex);
+
+            // death timestamp
+            // even though this pattern occurs twice,
+            // the second one is in a different order
+            // so we can't use loops here! sad!
+            if (i == 0)
+            {
+                c.GotoNext(i => i.MatchCallvirt<SpriteBatch>("Draw"));
+                c.GotoPrev(i => i.MatchBgeUn(out _));
+                // zero out value in check pre death marker rendering
+                // if the user doesn't want them rendered
+                ILLabel zeroSkip = EmitSkipForBoolConfigOption(il, c, "RenderDeathMarkers", branchIf: true);
+                c.EmitPop();
+                c.EmitLdcI4(0);
+                c.MarkLabel(zeroSkip);
+
+                c.GotoNext(MoveType.After, i => i.MatchLdstr("Game.PlayerDeathTime"));
+                c.GotoNext(MoveType.After, i => i.MatchCall("Terraria.Localization.Language", "GetTextValue"), i => i.MatchStloc(textIndex));
+                EmitStringSwapForCondition(il, c, "RenderDeathMarkers", textIndex);
+            }
+        }
+        // move back to the beginning of the method
+        while (c.TryGotoPrev(i => i.MatchStloc(textIndex)))
+        {
+           
+        }
+        //chest names
+        for (int i = 0; i < 2; i++)
+        {
+            c.GotoNext(MoveType.After, i => i.MatchCall<Main>("DrawMap_FindChestName"), i => i.MatchStloc(textIndex));
+            EmitStringSwapForCondition(il, c, "DontRenderTerrain", textIndex, branchIf: false);
+        }
+        for (int i = 0; i < 2; i++)
+        {
+            c.GotoNext(MoveType.After, i => i.MatchCallvirt<LocalizedText>("get_Value"), i => i.MatchStloc(textIndex));
+            EmitStringSwapForCondition(il, c, "DontRenderTerrain", textIndex, branchIf: false);
+        }
+
+        //dresser names lol
+        c.GotoNext(MoveType.After, i => i.MatchCall<Chest>("FindChest"));
+        c.GotoNext(MoveType.After, i => i.MatchStloc(textIndex));
+        EmitStringSwapForCondition(il, c, "DontRenderTerrain", textIndex, branchIf: false);
+
+        //tile names
+        c.GotoNext(MoveType.After, i => i.MatchCallvirt<MapLegend>("FromTile"), i => i.MatchStloc(textIndex));
+        EmitStringSwapForCondition(il, c, "DontRenderTerrain", textIndex, branchIf: false);
+
+        c.GotoNext(MoveType.After, i => i.MatchLdstr("Game.PlayerDeathTime"));
+        c.GotoNext(MoveType.After, i => i.MatchCall("Terraria.Localization.Language", "GetTextValue"), i => i.MatchStloc(textIndex));
+        EmitStringSwapForCondition(il, c, "RenderDeathMarkers", textIndex);
+
+
+
+        static void EmitStringSwapForCondition(ILContext il, ILCursor c, string condition, int variableIndex, bool branchIf = true)
+        {
+            ILLabel skip = EmitSkipForBoolConfigOption(il, c, condition, branchIf);
+            c.EmitLdstr("");
+            c.EmitStloc(variableIndex);
+            c.MarkLabel(skip);
+        }
     }
     private static void StopDeathMarkerDrawing(ILContext il)
     {

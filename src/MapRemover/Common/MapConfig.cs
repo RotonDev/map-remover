@@ -12,7 +12,7 @@ namespace MapRemover.Common;
 public class MapConfig : ModConfig
 {
     public static MapConfig Instance => ModContent.GetInstance<MapConfig>();
-    public override ConfigScope Mode => ConfigScope.ClientSide;
+    public override ConfigScope Mode => ConfigScope.ServerSide;
     [Header("MapRenderingOptions")]
     [DefaultValue(false)]
     public bool DontRenderTerrain;
@@ -38,4 +38,6 @@ public class MapConfig : ModConfig
     public bool RenderWorldSpawnIcon;
     [DefaultValue(true)]
     public bool RenderSpawnpointIcon;
+    [DefaultValue(true)]
+    public bool RenderPylons;
 }
