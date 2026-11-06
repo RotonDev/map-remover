@@ -1,3 +1,4 @@
 displayName = Map Remover
 author = Roton
 version = 0.1
+hideCode = true
